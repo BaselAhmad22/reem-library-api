@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: reem-library-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/public/health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: Jwt__Key
+        generateValue: true
+      - key: Cors__Origins
+        sync: false
