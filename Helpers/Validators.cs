@@ -39,6 +39,6 @@ public static class Validators
         return s;
     }
 
-    public static string FirstError(params string?[] errors)
-        => errors.FirstOrDefault(e => e != null) ?? string.Empty;
+    public static string? FirstError(params string?[] errors)
+        => errors.FirstOrDefault(e => !string.IsNullOrEmpty(e));
 }

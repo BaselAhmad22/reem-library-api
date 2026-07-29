@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<CategoryService>();
         services.AddScoped<SettingsService>();
         services.AddScoped<LibraryContentService>();
+        services.AddScoped<BookEngagementService>();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<AuditService>();
         services.AddSingleton<RealtimeService>();

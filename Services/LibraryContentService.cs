@@ -32,11 +32,29 @@ public class LibraryContentService
 
         var books = await _books.GetActiveWithCategoryAsync(ct);
         var bookDtos = books.Select(EntityMappers.MapBook).ToList();
+        var topRated = bookDtos
+            .Where(b => b.RatingsCount > 0)
+            .OrderByDescending(b => b.AverageRating)
+            .ThenByDescending(b => b.RatingsCount)
+            .ThenByDescending(b => b.DownloadCount)
+            .Take(20)
+            .ToList();
+
+        // If no ratings yet, show featured / popular downloads as starter carousel
+        if (topRated.Count == 0)
+        {
+            topRated = bookDtos
+                .OrderByDescending(b => b.IsFeatured)
+                .ThenByDescending(b => b.DownloadCount)
+                .Take(12)
+                .ToList();
+        }
 
         return new PublicContentDto(
             EntityMappers.MapSettings(settings),
             categories,
             bookDtos.Where(b => b.IsFeatured),
+            topRated,
             bookDtos,
             bookDtos.Count);
     }
@@ -46,6 +64,19 @@ public class LibraryContentService
         var book = await _books.GetByIdWithCategoryAsync(id, ct);
         if (book is null || !book.IsActive) return null;
         return EntityMappers.MapBook(book);
+    }
+
+    public async Task<IReadOnlyList<BookDto>> GetTopRatedAsync(int take = 20, CancellationToken ct = default)
+    {
+        var books = await _db.Books.AsNoTracking()
+            .Include(b => b.Category)
+            .Where(b => b.IsActive)
+            .OrderByDescending(b => b.AverageRating)
+            .ThenByDescending(b => b.RatingsCount)
+            .ThenByDescending(b => b.DownloadCount)
+            .Take(take)
+            .ToListAsync(ct);
+        return books.Select(EntityMappers.MapBook).ToList();
     }
 
     public async Task<DashboardStatsDto> GetDashboardStatsAsync(CancellationToken ct = default)

@@ -10,6 +10,9 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Book> Books => Set<Book>();
+    public DbSet<BookRating> BookRatings => Set<BookRating>();
+    public DbSet<BookReaction> BookReactions => Set<BookReaction>();
+    public DbSet<BookComment> BookComments => Set<BookComment>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<LibrarySettings> LibrarySettings => Set<LibrarySettings>();
 
@@ -38,10 +41,32 @@ public class AppDbContext : DbContext
             e.Property(x => x.Isbn).HasMaxLength(50);
             e.Property(x => x.Language).HasMaxLength(20);
             e.Property(x => x.CoverUrl).HasMaxLength(1000);
+            e.Property(x => x.DownloadUrl).HasMaxLength(1000);
             e.HasOne(x => x.Category)
                 .WithMany(x => x.Books)
                 .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BookRating>(e =>
+        {
+            e.HasIndex(x => new { x.BookId, x.UserId }).IsUnique();
+            e.HasOne(x => x.Book).WithMany(x => x.Ratings).HasForeignKey(x => x.BookId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BookReaction>(e =>
+        {
+            e.HasIndex(x => new { x.BookId, x.UserId }).IsUnique();
+            e.HasOne(x => x.Book).WithMany(x => x.Reactions).HasForeignKey(x => x.BookId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BookComment>(e =>
+        {
+            e.Property(x => x.Body).HasMaxLength(2000);
+            e.HasOne(x => x.Book).WithMany(x => x.Comments).HasForeignKey(x => x.BookId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<AuditLog>(e =>

@@ -30,6 +30,7 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<IEnumerable<UserDto>>> List()
     {
         var users = await _db.Users.AsNoTracking()
+            .Where(u => u.Role == "admin" || u.Role == "super_admin")
             .OrderByDescending(u => u.CreatedAt)
             .Select(u => new UserDto(u.Id, u.Email, u.FullName, u.Role, u.IsActive))
             .ToListAsync();

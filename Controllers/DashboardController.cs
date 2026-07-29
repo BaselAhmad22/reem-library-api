@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Elibrary.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "admin,super_admin")]
 [Route("api/dashboard")]
 public class DashboardController : ControllerBase
 {

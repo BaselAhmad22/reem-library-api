@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Elibrary.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "admin,super_admin")]
 [Route("api/categories")]
 public class CategoriesController : ControllerBase
 {

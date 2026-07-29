@@ -4,6 +4,10 @@ using Elibrary.Api.Hubs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
+// Ensure wwwroot exists (required by static web assets in Development)
+Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+
 var builder = WebApplication.CreateBuilder(args);
 
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5080";

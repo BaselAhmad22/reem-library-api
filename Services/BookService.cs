@@ -2,7 +2,6 @@ using Elibrary.Api.Dtos;
 using Elibrary.Api.Helpers;
 using Elibrary.Api.Models;
 using Elibrary.Api.Repositories;
-using Elibrary.Api.Services;
 
 namespace Elibrary.Api.Services;
 
@@ -90,6 +89,7 @@ public class BookService
             Validators.Require(req.Title, "Title"),
             Validators.Require(req.Author, "Author"),
             Validators.Url(req.CoverUrl),
+            Validators.Url(req.DownloadUrl),
             req.CategoryId <= 0 ? "Category is required." : null,
             req.PublishedYear is < 1000 or > 2100 ? "Invalid published year." : null);
 
@@ -99,10 +99,10 @@ public class BookService
         book.Author = req.Author.Trim();
         book.Description = req.Description?.Trim() ?? "";
         book.CoverUrl = req.CoverUrl?.Trim() ?? "";
+        book.DownloadUrl = req.DownloadUrl?.Trim() ?? "";
         book.Isbn = req.Isbn?.Trim() ?? "";
         book.PublishedYear = req.PublishedYear;
         book.Language = string.IsNullOrWhiteSpace(req.Language) ? "ar" : req.Language.Trim();
-        book.AvailableCopies = Math.Max(0, req.AvailableCopies);
         book.IsFeatured = req.IsFeatured;
         book.IsActive = req.IsActive;
         book.CategoryId = req.CategoryId;

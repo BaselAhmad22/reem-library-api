@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Elibrary.Api.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "admin,super_admin")]
 [Route("api/books")]
 public class BooksController : ControllerBase
 {

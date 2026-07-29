@@ -22,6 +22,28 @@ public class AuthController : ControllerBase
         _audit = audit;
     }
 
+    [HttpPost("register")]
+    public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest req)
+    {
+        var email = req.Email.Trim().ToLowerInvariant();
+        if (await _db.Users.AnyAsync(u => u.Email == email))
+            return BadRequest(new { message = "Email is already registered." });
+
+        var user = new User
+        {
+            Email = email,
+            FullName = req.FullName.Trim(),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password),
+            Role = "member",
+            IsActive = true
+        };
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync();
+
+        var token = _jwt.CreateToken(user);
+        return Ok(new LoginResponse(token, ToDto(user)));
+    }
+
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest req)
     {
@@ -31,7 +53,8 @@ public class AuthController : ControllerBase
             return Unauthorized(new { message = "Invalid email or password." });
 
         var token = _jwt.CreateToken(user);
-        await _audit.LogAsync("login", "user", user.Id.ToString(), $"Login: {user.Email}");
+        if (user.Role is "admin" or "super_admin")
+            await _audit.LogAsync("login", "user", user.Id.ToString(), $"Login: {user.Email}");
         return Ok(new LoginResponse(token, ToDto(user)));
     }
 
@@ -49,7 +72,9 @@ public class AuthController : ControllerBase
     [Microsoft.AspNetCore.Authorization.Authorize]
     public async Task<IActionResult> Logout()
     {
-        await _audit.LogAsync("logout", "user", null, "Logout");
+        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        if (role is "admin" or "super_admin")
+            await _audit.LogAsync("logout", "user", null, "Logout");
         return Ok(new { message = "Logged out." });
     }
 
