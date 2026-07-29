@@ -17,6 +17,7 @@ public static class Validators
     public static string? Url(string? value, bool optional = true)
     {
         if (string.IsNullOrWhiteSpace(value)) return optional ? null : "URL is required.";
+        if (value.StartsWith('/')) return null;
         return Uri.TryCreate(value, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps)
             ? null : "Invalid URL.";
     }

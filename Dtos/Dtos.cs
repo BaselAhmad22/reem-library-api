@@ -38,10 +38,12 @@ public record CategoryRequest(
 public record BookDto(
     int Id,
     string Title,
+    string TitleAr,
     string Author,
     string Description,
     string CoverUrl,
     string DownloadUrl,
+    string DownloadUrlAr,
     string Isbn,
     int? PublishedYear,
     string Language,
@@ -66,6 +68,8 @@ public record BookRequest(
     string Description = "",
     string CoverUrl = "",
     string DownloadUrl = "",
+    string DownloadUrlAr = "",
+    string TitleAr = "",
     string Isbn = "",
     int? PublishedYear = null,
     string Language = "ar",
@@ -93,7 +97,7 @@ public record ReactBookRequest(bool? Like);
 
 public record CommentRequest([Required, MinLength(2), MaxLength(2000)] string Body);
 
-public record DownloadResponse(string DownloadUrl, int DownloadCount);
+public record DownloadResponse(string DownloadUrl, int DownloadCount, string Language);
 
 public record SettingsDto(
     string NameAr,

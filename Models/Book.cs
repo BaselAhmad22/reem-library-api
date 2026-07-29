@@ -7,7 +7,12 @@ public class Book
     public string Author { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CoverUrl { get; set; } = string.Empty;
+    /// <summary>English PDF path or absolute URL.</summary>
     public string DownloadUrl { get; set; } = string.Empty;
+    /// <summary>Arabic PDF path or absolute URL.</summary>
+    public string DownloadUrlAr { get; set; } = string.Empty;
+    public int? GutenbergId { get; set; }
+    public string TitleAr { get; set; } = string.Empty;
     public string Isbn { get; set; } = string.Empty;
     public int? PublishedYear { get; set; }
     public string Language { get; set; } = "ar";

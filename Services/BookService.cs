@@ -90,16 +90,19 @@ public class BookService
             Validators.Require(req.Author, "Author"),
             Validators.Url(req.CoverUrl),
             Validators.Url(req.DownloadUrl),
+            Validators.Url(req.DownloadUrlAr),
             req.CategoryId <= 0 ? "Category is required." : null,
             req.PublishedYear is < 1000 or > 2100 ? "Invalid published year." : null);
 
     private static Book MapToEntity(BookRequest req, Book book)
     {
         book.Title = req.Title.Trim();
+        book.TitleAr = req.TitleAr?.Trim() ?? "";
         book.Author = req.Author.Trim();
         book.Description = req.Description?.Trim() ?? "";
         book.CoverUrl = req.CoverUrl?.Trim() ?? "";
         book.DownloadUrl = req.DownloadUrl?.Trim() ?? "";
+        book.DownloadUrlAr = req.DownloadUrlAr?.Trim() ?? "";
         book.Isbn = req.Isbn?.Trim() ?? "";
         book.PublishedYear = req.PublishedYear;
         book.Language = string.IsNullOrWhiteSpace(req.Language) ? "ar" : req.Language.Trim();

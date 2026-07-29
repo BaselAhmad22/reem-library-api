@@ -42,17 +42,22 @@ public class BookEngagementService(AppDbContext db)
             myLiked);
     }
 
-    public async Task<(DownloadResponse? Result, string? Error)> DownloadAsync(int bookId, int userId, CancellationToken ct = default)
+    public async Task<(DownloadResponse? Result, string? Error)> DownloadAsync(int bookId, int userId, string lang, CancellationToken ct = default)
     {
         var book = await db.Books.FirstOrDefaultAsync(b => b.Id == bookId && b.IsActive, ct);
         if (book is null) return (null, "Book not found.");
-        if (string.IsNullOrWhiteSpace(book.DownloadUrl))
+
+        var useAr = string.Equals(lang, "ar", StringComparison.OrdinalIgnoreCase);
+        var url = useAr ? book.DownloadUrlAr : book.DownloadUrl;
+        if (string.IsNullOrWhiteSpace(url))
+            url = useAr ? book.DownloadUrl : book.DownloadUrlAr;
+        if (string.IsNullOrWhiteSpace(url))
             return (null, "Download link is not available for this book.");
 
         book.DownloadCount += 1;
         book.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return (new DownloadResponse(book.DownloadUrl, book.DownloadCount), null);
+        return (new DownloadResponse(url, book.DownloadCount, useAr ? "ar" : "en"), null);
     }
 
     public async Task<(BookDto? Result, string? Error)> RateAsync(int bookId, int userId, int stars, CancellationToken ct = default)

@@ -38,12 +38,18 @@ public class PublicController : ControllerBase
 
     [Authorize]
     [HttpPost("books/{id:int}/download")]
-    public async Task<ActionResult<DownloadResponse>> Download(int id, CancellationToken ct)
+    public async Task<ActionResult<DownloadResponse>> Download(int id, [FromQuery] string lang = "en", CancellationToken ct = default)
     {
         var userId = RequireUserId();
-        var (result, error) = await _engagement.DownloadAsync(id, userId, ct);
+        var (result, error) = await _engagement.DownloadAsync(id, userId, lang, ct);
         if (error != null) return BadRequest(new { message = error });
-        return Ok(result);
+        if (result is null) return BadRequest(new { message = "Download failed." });
+
+        var url = result.DownloadUrl;
+        if (url.StartsWith('/'))
+            url = $"{Request.Scheme}://{Request.Host}{url}";
+
+        return Ok(result with { DownloadUrl = url });
     }
 
     [Authorize]

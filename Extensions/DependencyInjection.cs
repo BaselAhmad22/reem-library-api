@@ -19,9 +19,15 @@ public static class DependencyInjection
         services.AddScoped<SettingsService>();
         services.AddScoped<LibraryContentService>();
         services.AddScoped<BookEngagementService>();
+        services.AddScoped<BookPdfService>();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<AuditService>();
         services.AddSingleton<RealtimeService>();
+        services.AddHttpClient("gutenberg", c =>
+        {
+            c.Timeout = TimeSpan.FromMinutes(2);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("ReemLibraryBot/1.0 (+https://reem-library-site.netlify.app)");
+        });
 
         return services;
     }
@@ -31,6 +37,7 @@ public static class DependencyInjection
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         await db.Database.MigrateAsync();
-        await DbSeeder.SeedAsync(db);
+        var pdfs = scope.ServiceProvider.GetRequiredService<BookPdfService>();
+        await DbSeeder.SeedAsync(db, pdfs);
     }
 }

@@ -42,6 +42,8 @@ public class AppDbContext : DbContext
             e.Property(x => x.Language).HasMaxLength(20);
             e.Property(x => x.CoverUrl).HasMaxLength(1000);
             e.Property(x => x.DownloadUrl).HasMaxLength(1000);
+            e.Property(x => x.DownloadUrlAr).HasMaxLength(1000);
+            e.Property(x => x.TitleAr).HasMaxLength(300);
             e.HasOne(x => x.Category)
                 .WithMany(x => x.Books)
                 .HasForeignKey(x => x.CategoryId)

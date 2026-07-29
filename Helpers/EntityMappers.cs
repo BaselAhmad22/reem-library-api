@@ -10,7 +10,7 @@ public static class EntityMappers
         s.Email, s.Phone, s.AddressAr, s.AddressEn, s.WhatsApp);
 
     public static BookDto MapBook(Book b) => new(
-        b.Id, b.Title, b.Author, b.Description, b.CoverUrl, b.DownloadUrl, b.Isbn, b.PublishedYear,
+        b.Id, b.Title, b.TitleAr, b.Author, b.Description, b.CoverUrl, b.DownloadUrl, b.DownloadUrlAr, b.Isbn, b.PublishedYear,
         b.Language, b.IsFeatured, b.IsActive,
         b.DownloadCount, b.AverageRating, b.RatingsCount, b.LikesCount, b.DislikesCount, b.CommentsCount,
         b.CategoryId,
