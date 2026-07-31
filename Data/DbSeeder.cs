@@ -8,6 +8,16 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db, BookPdfService pdfs)
     {
+        static bool LooksCorruptedArabic(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return true;
+            // In production we observed sequences like "????" and the Unicode replacement char "�" (U+FFFD).
+            if (value.Contains('\uFFFD')) return true; // replacement character
+            if (value.Contains("????")) return true; // common corruption pattern
+            if (value.Contains('�')) return true;
+            return false;
+        }
+
         if (!await db.Users.AnyAsync())
         {
             db.Users.Add(new User
@@ -21,42 +31,84 @@ public static class DbSeeder
             await db.SaveChangesAsync();
         }
 
-        if (!await db.LibrarySettings.AnyAsync())
+        // Upsert library settings (including Arabic) because corrupted UTF-8 text can persist across redeploys.
+        var settings = await db.LibrarySettings.FirstOrDefaultAsync();
+        if (settings is null || LooksCorruptedArabic(settings.NameAr) || LooksCorruptedArabic(settings.TaglineAr) || LooksCorruptedArabic(settings.AboutAr) || LooksCorruptedArabic(settings.AddressAr))
         {
-            db.LibrarySettings.Add(new LibrarySettings
+            if (settings is null)
             {
-                NameAr = "مكتبة ريم الإلكترونية",
-                NameEn = "Reem Digital Library",
-                TaglineAr = "اقرأ · اكتشف · حمّل",
-                TaglineEn = "Read · Discover · Download",
-                AboutAr = "مكتبة رقمية مفتوحة تتيح تصفح وتحميل كتب من الملك العام بصيغة PDF عربية وإنجليزية.",
-                AboutEn = "An open digital library for browsing and downloading public-domain books as Arabic and English PDFs.",
-                Email = "hello@elibrary.local",
-                Phone = "+60196493629",
-                WhatsApp = "60196493629",
-                AddressAr = "كوالالمبور، ماليزيا",
-                AddressEn = "Kuala Lumpur, Malaysia"
-            });
+                settings = new LibrarySettings();
+                db.LibrarySettings.Add(settings);
+            }
+
+            settings.NameAr = "مكتبة ريم الإلكترونية";
+            settings.NameEn = "Reem Digital Library";
+            settings.TaglineAr = "اقرأ · اكتشف · حمّل";
+            settings.TaglineEn = "Read · Discover · Download";
+            settings.AboutAr = "مكتبة رقمية مفتوحة تتيح تصفح وتحميل كتب من الملك العام بصيغة PDF عربية وإنجليزية.";
+            settings.AboutEn = "An open digital library for browsing and downloading public-domain books as Arabic and English PDFs.";
+            settings.Email = "hello@elibrary.local";
+            settings.Phone = "+60196493629";
+            settings.WhatsApp = "60196493629";
+            settings.AddressAr = "كوالالمبور، ماليزيا";
+            settings.AddressEn = "Kuala Lumpur, Malaysia";
             await db.SaveChangesAsync();
         }
 
-        if (!await db.Categories.AnyAsync())
+        // Upsert categories too, so Arabic category names don't stay corrupted.
+        var existingCats = await db.Categories.ToListAsync();
+        var seedCats = new[]
         {
-            db.Categories.AddRange(
-                new Category { NameAr = "رواية", NameEn = "Fiction", Slug = "fiction", SortOrder = 1 },
-                new Category { NameAr = "كلاسيكيات", NameEn = "Classics", Slug = "classics", SortOrder = 2 },
-                new Category { NameAr = "مغامرات", NameEn = "Adventure", Slug = "adventure", SortOrder = 3 },
-                new Category { NameAr = "علوم وفلسفة", NameEn = "Science & Philosophy", Slug = "science-philosophy", SortOrder = 4 },
-                new Category { NameAr = "شعر وأدب", NameEn = "Poetry & Literature", Slug = "poetry-literature", SortOrder = 5 }
-            );
+            new Category { NameAr = "رواية", NameEn = "Fiction", Slug = "fiction", SortOrder = 1 },
+            new Category { NameAr = "كلاسيكيات", NameEn = "Classics", Slug = "classics", SortOrder = 2 },
+            new Category { NameAr = "مغامرات", NameEn = "Adventure", Slug = "adventure", SortOrder = 3 },
+            new Category { NameAr = "علوم وفلسفة", NameEn = "Science & Philosophy", Slug = "science-philosophy", SortOrder = 4 },
+            new Category { NameAr = "شعر وأدب", NameEn = "Poetry & Literature", Slug = "poetry-literature", SortOrder = 5 },
+        };
+
+        var categoriesNeedFix =
+            existingCats.Count == 0 ||
+            existingCats.Any(c => LooksCorruptedArabic(c.NameAr));
+
+        if (categoriesNeedFix)
+        {
+            if (existingCats.Count == 0)
+            {
+                db.Categories.AddRange(seedCats);
+            }
+            else
+            {
+                foreach (var sc in seedCats)
+                {
+                    var match = existingCats.FirstOrDefault(c => c.Slug == sc.Slug);
+                    if (match is null)
+                    {
+                        db.Categories.Add(sc);
+                        continue;
+                    }
+
+                    match.NameAr = sc.NameAr;
+                    match.NameEn = sc.NameEn;
+                    match.SortOrder = sc.SortOrder;
+                }
+            }
+
             await db.SaveChangesAsync();
         }
 
-        var needsCatalog = !await db.Books.AnyAsync()
+        var needsCatalog =
+            // Missing books (first run)
+            !await db.Books.AnyAsync()
+            // Protect against legacy EPUB downloads
             || await db.Books.AnyAsync(b =>
                 string.IsNullOrEmpty(b.DownloadUrlAr)
-                || b.DownloadUrl.Contains("epub", StringComparison.OrdinalIgnoreCase)
-                || !b.DownloadUrl.Contains("/books/", StringComparison.OrdinalIgnoreCase));
+                || EF.Functions.Like(b.DownloadUrl, "%epub%")
+                || !EF.Functions.Like(b.DownloadUrl, "%/books/%"))
+            // Arabic corruption can persist even when URLs exist; reseed books when Arabic fields look broken.
+            || await db.Books.AnyAsync(b =>
+                string.IsNullOrWhiteSpace(b.TitleAr)
+                || b.TitleAr.Contains('\uFFFD')
+                || b.TitleAr.Contains("????"));
 
         if (!needsCatalog)
         {
