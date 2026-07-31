@@ -53,6 +53,19 @@ var corsOrigins = builder.Configuration["Cors:Origins"]?
     .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
     ?? Array.Empty<string>();
 
+// Always allow local + GitHub Pages demo hosts (in addition to configured origins).
+var extraOrigins = new[]
+{
+    "https://baselahmad22.github.io",
+    "https://reem-library-site.netlify.app",
+    "https://reem-library-admin.netlify.app",
+    "http://127.0.0.1:5180",
+    "http://localhost:5180",
+    "http://127.0.0.1:5181",
+    "http://localhost:5181",
+};
+corsOrigins = corsOrigins.Concat(extraOrigins).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("AppCors", p =>
